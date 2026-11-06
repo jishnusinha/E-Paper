@@ -3,12 +3,12 @@ import cors from "cors";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
-import { env } from "./config/env.js";
+import { env, isSarvamAiEnabled, isSarvamConfigured } from "./config/env.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import publicRoutes from "./routes/publicRoutes.js";
-import { sendSuccess } from "./utils/response.js";
+import { sendSuccess, sendError } from "./utils/response.js";
 import { LOCAL_STORAGE_ROOT } from "./services/storage/paths.js";
 
 export function createApp() {
@@ -75,12 +75,30 @@ export function createApp() {
   );
 
   app.get("/api/health", (_req, res) => {
-    sendSuccess(res, { status: "ok", service: "epaper-api" });
+    sendSuccess(res, {
+      status: "ok",
+      service: "epaper-api",
+      ai: {
+        routes: true,
+        enabled: isSarvamAiEnabled(),
+        configured: isSarvamConfigured(),
+      },
+    });
   });
 
   app.use("/api/auth", authRoutes);
   app.use("/api/admin", adminRoutes);
   app.use("/api/public", publicRoutes);
+
+  // JSON 404 for unknown API routes (avoids HTML "Cannot POST ..." responses).
+  app.use("/api", (req, res) => {
+    sendError(
+      res,
+      `No API route for ${req.method} ${req.originalUrl}`,
+      404,
+      "ROUTE_NOT_FOUND"
+    );
+  });
 
   app.use(errorHandler);
   return app;

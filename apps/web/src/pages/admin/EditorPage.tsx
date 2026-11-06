@@ -206,14 +206,15 @@ export function EditorPage() {
   });
 
   const detectMutation = useMutation({
-    mutationFn: () => aiApi.detect(activePageId!, { language: "en-IN" }),
-    onSuccess: (result) => {
+    mutationFn: (pageId: string) =>
+      aiApi.detect(pageId, { language: "bn-IN" }),
+    onSuccess: (result, pageId) => {
       setDetectDialogOpen(false);
       void queryClient.invalidateQueries({
-        queryKey: ["page-ai-job", activePageId],
+        queryKey: ["page-ai-job", pageId],
       });
       void queryClient.invalidateQueries({
-        queryKey: ["page-ai-suggestions", activePageId],
+        queryKey: ["page-ai-suggestions", pageId],
       });
       if (result.cached) {
         toast.success("Loaded cached AI suggestions");
@@ -487,7 +488,13 @@ export function EditorPage() {
         onOpenChange={setDetectDialogOpen}
         hasCache={hasCacheHint}
         loading={detectMutation.isPending}
-        onConfirm={() => detectMutation.mutate()}
+        onConfirm={() => {
+          if (!activePageId) {
+            toast.error("Select a newspaper page before running AI detection");
+            return;
+          }
+          detectMutation.mutate(activePageId);
+        }}
       />
     </div>
   );

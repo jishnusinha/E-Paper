@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import mongoose from "mongoose";
 import { aiDetectSchema } from "@epaper/shared";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { sendSuccess } from "../utils/response.js";
@@ -21,8 +22,22 @@ import { getUsageSummary } from "../services/ai/usageLimiter.js";
 import { isSarvamAiEnabled, isSarvamConfigured } from "../config/env.js";
 
 async function requirePage(pageId: string) {
-  const page = await Page.findById(pageId);
-  if (!page) throw new AppError("Page not found", 404, "NOT_FOUND");
+  const id = String(pageId ?? "").trim();
+  if (!id || !mongoose.isValidObjectId(id)) {
+    throw new AppError(
+      `Invalid page id "${id || "(empty)"}"`,
+      400,
+      "INVALID_PAGE_ID"
+    );
+  }
+  const page = await Page.findById(id);
+  if (!page) {
+    throw new AppError(
+      `Page not found for id ${id}`,
+      404,
+      "NOT_FOUND"
+    );
+  }
   return page;
 }
 
