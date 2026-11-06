@@ -2,10 +2,11 @@ import { isCloudinaryConfigured } from "../../config/env.js";
 import * as cloudinary from "../cloudinary/client.js";
 import * as local from "./local.js";
 
+/**
+ * Newspaper PDFs are often larger than Cloudinary's free raw-file limit (10MB).
+ * Keep originals on local/API storage; Cloudinary is used for rendered page images.
+ */
 export async function uploadPdf(filePath: string, publicId: string) {
-  if (isCloudinaryConfigured()) {
-    return cloudinary.uploadPdf(filePath, publicId);
-  }
   return local.localUploadPdf(filePath, publicId);
 }
 

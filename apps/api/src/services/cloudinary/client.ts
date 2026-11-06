@@ -27,9 +27,20 @@ export function getCloudinary() {
 }
 
 function uploadFailureMessage(error: unknown, fallback: string) {
-  if (error instanceof Error && error.message) {
-    return `${fallback}: ${error.message}`;
+  const raw =
+    error instanceof Error && error.message
+      ? error.message
+      : typeof error === "object" &&
+          error &&
+          "message" in error &&
+          typeof (error as { message: unknown }).message === "string"
+        ? (error as { message: string }).message
+        : "";
+
+  if (/file size too large|maximum is \d/i.test(raw)) {
+    return `${fallback}: file exceeds Cloudinary plan size limit (free plan allows 10MB). Reduce PDF_RENDER_TARGET_WIDTH or upgrade Cloudinary.`;
   }
+  if (raw) return `${fallback}: ${raw}`;
   return fallback;
 }
 

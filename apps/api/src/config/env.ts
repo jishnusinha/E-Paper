@@ -27,6 +27,9 @@ const envSchema = z.object({
     normalizeClientUrl,
     z.string().url().default("http://localhost:5173")
   ),
+  // Public origin of this API (used for /media URLs). Falls back to Railway domain.
+  PUBLIC_API_URL: z.preprocess(normalizeClientUrl, z.string().url().optional()),
+  RAILWAY_PUBLIC_DOMAIN: z.string().optional().default(""),
   JWT_SECRET: z.string().min(16),
   JWT_EXPIRES_IN: z.string().default("7d"),
   COOKIE_NAME: z.string().default("epaper_token"),
@@ -64,4 +67,15 @@ export function isCloudinaryConfigured(): boolean {
       env.CLOUDINARY_API_KEY &&
       env.CLOUDINARY_API_SECRET
   );
+}
+
+/** Public origin for this API process (no trailing slash). */
+export function getPublicApiOrigin(): string {
+  if (env.PUBLIC_API_URL) {
+    return env.PUBLIC_API_URL.replace(/\/$/, "");
+  }
+  if (env.RAILWAY_PUBLIC_DOMAIN) {
+    return `https://${env.RAILWAY_PUBLIC_DOMAIN.replace(/^https?:\/\//, "").replace(/\/$/, "")}`;
+  }
+  return `http://localhost:${env.PORT}`;
 }

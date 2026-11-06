@@ -1,13 +1,13 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { createCanvas, loadImage } from "@napi-rs/canvas";
-import { env } from "../../config/env.js";
+import { getPublicApiOrigin } from "../../config/env.js";
 import { LOCAL_STORAGE_ROOT } from "./paths.js";
 
 export { LOCAL_STORAGE_ROOT };
 
 function publicBaseUrl() {
-  return `http://localhost:${env.PORT}/media`;
+  return `${getPublicApiOrigin()}/media`;
 }
 
 export async function ensureLocalStorage() {
