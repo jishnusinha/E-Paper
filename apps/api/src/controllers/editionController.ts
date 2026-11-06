@@ -137,6 +137,10 @@ export const createEdition = asyncHandler(async (req: Request, res: Response) =>
   if (file.mimetype !== "application/pdf") {
     throw new AppError("Only PDF files are allowed", 400, "INVALID_FILE_TYPE");
   }
+  if (!file.size) {
+    await fs.unlink(file.path).catch(() => undefined);
+    throw new AppError("Uploaded PDF is empty", 400, "EMPTY_PDF");
+  }
 
   const existing = await Edition.findOne({
     publicationDate: body.publicationDate,

@@ -26,36 +26,59 @@ export function getCloudinary() {
   return cloudinary;
 }
 
+function uploadFailureMessage(error: unknown, fallback: string) {
+  if (error instanceof Error && error.message) {
+    return `${fallback}: ${error.message}`;
+  }
+  return fallback;
+}
+
 export async function uploadPdf(
   filePath: string,
   publicId: string
 ): Promise<{ publicId: string; url: string }> {
-  const result = await getCloudinary().uploader.upload(filePath, {
-    resource_type: "raw",
-    folder: "epaper/pdfs",
-    public_id: publicId,
-    overwrite: true,
-  });
-  return { publicId: result.public_id, url: result.secure_url };
+  try {
+    const result = await getCloudinary().uploader.upload(filePath, {
+      resource_type: "raw",
+      folder: "epaper/pdfs",
+      public_id: publicId,
+      overwrite: true,
+    });
+    return { publicId: result.public_id, url: result.secure_url };
+  } catch (error) {
+    throw new AppError(
+      uploadFailureMessage(error, "Failed to upload PDF to Cloudinary"),
+      502,
+      "CLOUDINARY_UPLOAD_FAILED"
+    );
+  }
 }
 
 export async function uploadPageImage(
   filePath: string,
   publicId: string
 ): Promise<{ publicId: string; url: string; width: number; height: number }> {
-  const result = await getCloudinary().uploader.upload(filePath, {
-    resource_type: "image",
-    folder: "epaper/pages",
-    public_id: publicId,
-    overwrite: true,
-    format: "webp",
-  });
-  return {
-    publicId: result.public_id,
-    url: result.secure_url,
-    width: result.width ?? 0,
-    height: result.height ?? 0,
-  };
+  try {
+    const result = await getCloudinary().uploader.upload(filePath, {
+      resource_type: "image",
+      folder: "epaper/pages",
+      public_id: publicId,
+      overwrite: true,
+      format: "webp",
+    });
+    return {
+      publicId: result.public_id,
+      url: result.secure_url,
+      width: result.width ?? 0,
+      height: result.height ?? 0,
+    };
+  } catch (error) {
+    throw new AppError(
+      uploadFailureMessage(error, "Failed to upload page image to Cloudinary"),
+      502,
+      "CLOUDINARY_UPLOAD_FAILED"
+    );
+  }
 }
 
 export function buildThumbnailUrl(publicId: string, width = 240): string {

@@ -11,6 +11,13 @@ export const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
+api.interceptors.request.use((config) => {
+  // Let the browser set multipart boundary for FormData uploads.
+  if (typeof FormData !== "undefined" && config.data instanceof FormData) {
+    config.headers.delete("Content-Type");
+  }
+  return config;
+});
 api.interceptors.response.use(
   (response) => response,
   (error) => {

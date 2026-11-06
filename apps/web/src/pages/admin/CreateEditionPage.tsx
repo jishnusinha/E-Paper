@@ -59,7 +59,6 @@ export function CreateEditionPage() {
     try {
       setProgress(0);
       const { data } = await api.post("/admin/editions", form, {
-        headers: { "Content-Type": "multipart/form-data" },
         onUploadProgress: (event) => {
           if (!event.total) return;
           setProgress(Math.round((event.loaded / event.total) * 100));

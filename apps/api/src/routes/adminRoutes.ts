@@ -1,9 +1,12 @@
 import { Router } from "express";
 import multer from "multer";
+import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { randomUUID } from "node:crypto";
 import { env } from "../config/env.js";
 import { requireAuth } from "../middleware/auth.js";
+import { AppError } from "../utils/errors.js";
 import * as editionController from "../controllers/editionController.js";
 import * as pageController from "../controllers/pageController.js";
 import * as segmentController from "../controllers/segmentController.js";
@@ -12,12 +15,25 @@ import * as themeController from "../controllers/themeController.js";
 const router = Router();
 router.use(requireAuth);
 
+const uploadDir = path.join(os.tmpdir(), "epaper", "uploads");
+fs.mkdirSync(uploadDir, { recursive: true });
+
 const upload = multer({
-  dest: path.join(os.tmpdir(), "epaper", "uploads"),
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => {
+      fs.mkdir(uploadDir, { recursive: true }, (err) => {
+        cb(err, uploadDir);
+      });
+    },
+    filename: (_req, file, cb) => {
+      const safeName = file.originalname.replace(/[^\w.-]+/g, "_");
+      cb(null, `${Date.now()}-${randomUUID()}-${safeName}`);
+    },
+  }),
   limits: { fileSize: env.MAX_PDF_UPLOAD_MB * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     if (file.mimetype === "application/pdf") cb(null, true);
-    else cb(new Error("Only PDF files are allowed"));
+    else cb(new AppError("Only PDF files are allowed", 400, "INVALID_FILE_TYPE"));
   },
 });
 
