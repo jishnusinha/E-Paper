@@ -122,6 +122,19 @@ export const batchSegmentsSchema = z.object({
   delete: z.array(z.string()).default([]),
 });
 
+export const aiDetectSchema = z.object({
+  language: z
+    .string()
+    .regex(/^[a-z]{2}-[A-Z]{2}$/, "Language must be BCP-47 like en-IN")
+    .default("en-IN"),
+  force: z.boolean().optional().default(false),
+});
+
+export const updateAiSuggestionSchema = z.object({
+  title: z.string().max(300).optional(),
+  coordinates: segmentCoordinatesSchema.optional(),
+});
+
 export const reorderPagesSchema = z.object({
   pageIds: z.array(z.string()).min(1),
 });

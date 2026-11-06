@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { editionsApi } from "@/services/editions";
+import { aiApi } from "@/services/ai";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,6 +15,10 @@ export function DashboardPage() {
   const editionsQuery = useQuery({
     queryKey: ["editions", "recent"],
     queryFn: () => editionsApi.list({ page: 1, limit: 5, sort: "-updatedAt" }),
+  });
+  const aiUsageQuery = useQuery({
+    queryKey: ["ai-usage"],
+    queryFn: aiApi.usage,
   });
 
   const stats = [
@@ -51,6 +56,57 @@ export function DashboardPage() {
           </Card>
         ))}
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Sarvam AI Usage</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {aiUsageQuery.isLoading ? (
+            <Skeleton className="h-24 w-full" />
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div>
+                <p className="text-sm text-muted-foreground">AI Status</p>
+                <p className="text-lg font-semibold">
+                  {aiUsageQuery.data?.enabled ? "Enabled" : "Disabled"}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Requests This Month</p>
+                <p className="text-lg font-semibold">
+                  {aiUsageQuery.data?.requestsThisMonth ?? 0}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Pages Analyzed</p>
+                <p className="text-lg font-semibold">
+                  {aiUsageQuery.data?.pagesAnalyzedThisMonth ?? 0}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Cached Results</p>
+                <p className="text-lg font-semibold">
+                  {aiUsageQuery.data?.cachedResultsServed ?? 0}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Estimated Usage</p>
+                <p className="text-lg font-semibold">
+                  ₹{(aiUsageQuery.data?.estimatedUsageInr ?? 0).toFixed(2)}
+                </p>
+                <p className="text-xs text-muted-foreground">Estimate only</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Application Budget</p>
+                <p className="text-lg font-semibold">
+                  ₹{aiUsageQuery.data?.monthlyBudgetInr ?? 0}
+                </p>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

@@ -42,6 +42,19 @@ const envSchema = z.object({
   MAX_PDF_UPLOAD_MB: z.coerce.number().default(100),
   PDF_RENDER_TARGET_WIDTH: z.coerce.number().default(3000),
   PDF_PROCESSING_CONCURRENCY: z.coerce.number().default(2),
+  SARVAM_API_KEY: z.string().optional().default(""),
+  SARVAM_AI_ENABLED: z
+    .string()
+    .optional()
+    .default("false")
+    .transform((v) => v === "true" || v === "1"),
+  SARVAM_MAX_PAGES_PER_DAY: z.coerce.number().default(3),
+  SARVAM_MAX_REQUESTS_PER_DAY: z.coerce.number().default(5),
+  SARVAM_MONTHLY_BUDGET_INR: z.coerce.number().default(50),
+  SARVAM_POLL_INTERVAL_SECONDS: z.coerce.number().default(5),
+  /** Estimated INR charged per page parse (application-level estimate only). */
+  SARVAM_ESTIMATED_COST_PER_PAGE_INR: z.coerce.number().default(0.5),
+  SARVAM_BASE_URL: z.string().url().default("https://api.sarvam.ai"),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -67,6 +80,14 @@ export function isCloudinaryConfigured(): boolean {
       env.CLOUDINARY_API_KEY &&
       env.CLOUDINARY_API_SECRET
   );
+}
+
+export function isSarvamConfigured(): boolean {
+  return Boolean(env.SARVAM_API_KEY && env.SARVAM_API_KEY.trim().length > 0);
+}
+
+export function isSarvamAiEnabled(): boolean {
+  return Boolean(env.SARVAM_AI_ENABLED && isSarvamConfigured());
 }
 
 /** Public origin for this API process (no trailing slash). */

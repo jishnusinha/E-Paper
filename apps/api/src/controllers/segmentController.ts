@@ -23,6 +23,8 @@ function serializeSegment(segment: InstanceType<typeof Segment>) {
     hoverColor: segment.hoverColor,
     hoverOpacity: segment.hoverOpacity,
     isEnabled: segment.isEnabled,
+    extractedText: segment.extractedText ?? "",
+    source: segment.source ?? "manual",
     createdAt: segment.createdAt,
     updatedAt: segment.updatedAt,
   };

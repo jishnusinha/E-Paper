@@ -30,6 +30,18 @@ const segmentSchema = new Schema(
     hoverColor: { type: String, default: "rgba(79, 70, 229, 0.14)" },
     hoverOpacity: { type: Number, default: 0.14, min: 0, max: 1 },
     isEnabled: { type: Boolean, default: true },
+    /** Optional OCR text preserved when a segment originates from AI. */
+    extractedText: { type: String, default: "" },
+    source: {
+      type: String,
+      enum: ["manual", "ai"],
+      default: "manual",
+    },
+    aiSuggestionId: {
+      type: Schema.Types.ObjectId,
+      ref: "AiSuggestion",
+      default: null,
+    },
   },
   { timestamps: true }
 );
