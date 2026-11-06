@@ -6,6 +6,10 @@
     "types": ["node"]
   },
   "include": ["src/**/*"],
-  "exclude": ["src/scripts/generate-sample-pdf.ts"],
+  "exclude": [
+    "src/scripts/generate-sample-pdf.ts",
+    "src/tests/**",
+    "**/*.test.ts"
+  ],
   "references": [{ "path": "../../packages/shared" }]
 }

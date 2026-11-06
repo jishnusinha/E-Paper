@@ -9,6 +9,8 @@
   "scripts": {
     "dev": "concurrently -n api,web -c blue,green \"npm run dev -w @epaper/api\" \"npm run dev -w @epaper/web\"",
     "build": "npm run build -w @epaper/shared && npm run build -w @epaper/api && npm run build -w @epaper/web",
+    "build:api": "npm run build -w @epaper/api",
+    "build:web": "npm run build -w @epaper/web",
     "typecheck": "npm run typecheck -w @epaper/shared && npm run typecheck -w @epaper/api && npm run typecheck -w @epaper/web",
     "lint": "npm run lint -w @epaper/shared && npm run lint -w @epaper/api && npm run lint -w @epaper/web",
     "test": "npm run test -w @epaper/shared && npm run test -w @epaper/api && npm run test -w @epaper/web",
