@@ -7,11 +7,26 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 loadEnv({ path: path.resolve(__dirname, "../../.env") });
 loadEnv();
 
+function normalizeClientUrl(value: unknown): unknown {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim().replace(/\/$/, "");
+  if (!trimmed || trimmed === "https://" || trimmed === "http://") {
+    return undefined;
+  }
+  if (!/^https?:\/\//i.test(trimmed)) {
+    return `https://${trimmed}`;
+  }
+  return trimmed;
+}
+
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().default(5000),
   MONGODB_URI: z.string().min(1),
-  CLIENT_URL: z.string().url().default("http://localhost:5173"),
+  CLIENT_URL: z.preprocess(
+    normalizeClientUrl,
+    z.string().url().default("http://localhost:5173")
+  ),
   JWT_SECRET: z.string().min(16),
   JWT_EXPIRES_IN: z.string().default("7d"),
   COOKIE_NAME: z.string().default("epaper_token"),

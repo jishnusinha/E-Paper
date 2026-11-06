@@ -47,6 +47,11 @@ export function createApp() {
           callback(null, true);
           return;
         }
+        // Allow Railway preview/custom service domains during Hobby deploys
+        if (/^https:\/\/[\w.-]+\.up\.railway\.app$/.test(origin)) {
+          callback(null, true);
+          return;
+        }
         callback(null, false);
       },
       credentials: true,

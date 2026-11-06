@@ -10,8 +10,9 @@ async function main() {
   startProcessingWorker();
 
   const app = createApp();
-  app.listen(env.PORT, () => {
-    console.log(`[api] listening on http://localhost:${env.PORT}`);
+  app.listen(env.PORT, "0.0.0.0", () => {
+    console.log(`[api] listening on http://0.0.0.0:${env.PORT}`);
+    console.log(`[api] CLIENT_URL=${env.CLIENT_URL}`);
   });
 }
 
