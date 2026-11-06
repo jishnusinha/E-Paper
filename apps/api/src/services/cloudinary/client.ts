@@ -1,0 +1,110 @@
+import { v2 as cloudinary } from "cloudinary";
+import { env, isCloudinaryConfigured } from "../../config/env.js";
+import { AppError } from "../../utils/errors.js";
+
+let configured = false;
+
+export function getCloudinary() {
+  if (!isCloudinaryConfigured()) {
+    throw new AppError(
+      "Cloudinary is not configured. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET.",
+      503,
+      "CLOUDINARY_NOT_CONFIGURED"
+    );
+  }
+
+  if (!configured) {
+    cloudinary.config({
+      cloud_name: env.CLOUDINARY_CLOUD_NAME,
+      api_key: env.CLOUDINARY_API_KEY,
+      api_secret: env.CLOUDINARY_API_SECRET,
+      secure: true,
+    });
+    configured = true;
+  }
+
+  return cloudinary;
+}
+
+export async function uploadPdf(
+  filePath: string,
+  publicId: string
+): Promise<{ publicId: string; url: string }> {
+  const result = await getCloudinary().uploader.upload(filePath, {
+    resource_type: "raw",
+    folder: "epaper/pdfs",
+    public_id: publicId,
+    overwrite: true,
+  });
+  return { publicId: result.public_id, url: result.secure_url };
+}
+
+export async function uploadPageImage(
+  filePath: string,
+  publicId: string
+): Promise<{ publicId: string; url: string; width: number; height: number }> {
+  const result = await getCloudinary().uploader.upload(filePath, {
+    resource_type: "image",
+    folder: "epaper/pages",
+    public_id: publicId,
+    overwrite: true,
+    format: "webp",
+  });
+  return {
+    publicId: result.public_id,
+    url: result.secure_url,
+    width: result.width ?? 0,
+    height: result.height ?? 0,
+  };
+}
+
+export function buildThumbnailUrl(publicId: string, width = 240): string {
+  return getCloudinary().url(publicId, {
+    secure: true,
+    transformation: [
+      { width, crop: "scale", quality: "auto", fetch_format: "auto" },
+    ],
+  });
+}
+
+export function buildOptimizedPageUrl(publicId: string, width = 1600): string {
+  return getCloudinary().url(publicId, {
+    secure: true,
+    transformation: [
+      { width, crop: "scale", quality: "auto:good", fetch_format: "auto" },
+    ],
+  });
+}
+
+export function buildCropUrl(
+  publicId: string,
+  crop: { x: number; y: number; width: number; height: number },
+  options?: { width?: number }
+): string {
+  const transforms: Record<string, unknown>[] = [
+    {
+      x: Math.round(crop.x),
+      y: Math.round(crop.y),
+      width: Math.round(crop.width),
+      height: Math.round(crop.height),
+      crop: "crop",
+      gravity: "north_west",
+    },
+  ];
+
+  if (options?.width) {
+    transforms.push({
+      width: options.width,
+      crop: "scale",
+      quality: "auto:good",
+      fetch_format: "auto",
+    });
+  } else {
+    transforms.push({ quality: "auto:good", fetch_format: "auto" });
+  }
+
+  return getCloudinary().url(publicId, {
+    secure: true,
+    transformation: transforms,
+  });
+}
