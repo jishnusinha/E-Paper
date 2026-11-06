@@ -16,9 +16,17 @@ import {
 } from "@epaper/shared";
 import { useEditorStore } from "@/stores/editorStore";
 import type { NewspaperPage, Segment } from "@/types";
+import type { AiSuggestionDto, SegmentCoordinates } from "@epaper/shared";
 
 interface Props {
   page: NewspaperPage;
+  aiSuggestions?: AiSuggestionDto[];
+  selectedSuggestionId?: string | null;
+  onSelectSuggestion?: (id: string | null) => void;
+  onUpdateSuggestionCoordinates?: (
+    id: string,
+    coordinates: SegmentCoordinates
+  ) => void;
 }
 
 function useHtmlImage(url: string) {
@@ -35,12 +43,20 @@ function useHtmlImage(url: string) {
   return image;
 }
 
-export function CanvasWorkspace({ page }: Props) {
+export function CanvasWorkspace({
+  page,
+  aiSuggestions = [],
+  selectedSuggestionId = null,
+  onSelectSuggestion,
+  onUpdateSuggestionCoordinates,
+}: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
   const layerRef = useRef<Konva.Layer>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
   const selectedNodeRef = useRef<Konva.Rect | null>(null);
+  const suggestionNodeRef = useRef<Konva.Rect | null>(null);
+  const suggestionTransformerRef = useRef<Konva.Transformer>(null);
 
   const image = useHtmlImage(page.imageUrl);
   const [size, setSize] = useState({ width: 800, height: 600 });
@@ -57,6 +73,8 @@ export function CanvasWorkspace({ page }: Props) {
   const updateSegment = useEditorStore((s) => s.updateSegment);
   const pushHistory = useEditorStore((s) => s.pushHistory);
   const setIsDrawing = useEditorStore((s) => s.setIsDrawing);
+
+  const pendingSuggestions = aiSuggestions.filter((s) => s.status === "pending");
 
   const [draft, setDraft] = useState<{
     x: number;
@@ -118,6 +136,18 @@ export function CanvasWorkspace({ page }: Props) {
       selectedNodeRef.current = null;
     }
   }, [selectedSegmentId, segments, zoom]);
+
+  useEffect(() => {
+    const tr = suggestionTransformerRef.current;
+    if (!tr) return;
+    if (suggestionNodeRef.current && selectedSuggestionId) {
+      tr.nodes([suggestionNodeRef.current]);
+      tr.getLayer()?.batchDraw();
+    } else {
+      tr.nodes([]);
+      suggestionNodeRef.current = null;
+    }
+  }, [selectedSuggestionId, pendingSuggestions, zoom]);
 
   /** Convert stage pointer → page-local pixel coordinates (pre-normalization). */
   const getPointerOnPage = () => {
@@ -203,6 +233,7 @@ export function CanvasWorkspace({ page }: Props) {
 
           if (e.target === e.target.getStage()) {
             setSelectedSegmentId(null);
+            onSelectSuggestion?.(null);
           }
         }}
         onMouseMove={(e) => {
@@ -328,11 +359,17 @@ export function CanvasWorkspace({ page }: Props) {
                 })}
                 onClick={(e) => {
                   e.cancelBubble = true;
-                  if (activeTool === "select") setSelectedSegmentId(segment.id);
+                  if (activeTool === "select") {
+                    onSelectSuggestion?.(null);
+                    setSelectedSegmentId(segment.id);
+                  }
                 }}
                 onTap={(e) => {
                   e.cancelBubble = true;
-                  if (activeTool === "select") setSelectedSegmentId(segment.id);
+                  if (activeTool === "select") {
+                    onSelectSuggestion?.(null);
+                    setSelectedSegmentId(segment.id);
+                  }
                 }}
                 onDragStart={() => pushHistory()}
                 onDragEnd={(e) => {
@@ -379,6 +416,92 @@ export function CanvasWorkspace({ page }: Props) {
             />
           ))}
 
+          {pendingSuggestions.map((suggestion) => {
+            const x = suggestion.coordinates.x * pageSize.width;
+            const y = suggestion.coordinates.y * pageSize.height;
+            const width = suggestion.coordinates.width * pageSize.width;
+            const height = suggestion.coordinates.height * pageSize.height;
+            const selected = suggestion.id === selectedSuggestionId;
+
+            return (
+              <Rect
+                key={`ai-${suggestion.id}`}
+                ref={(node) => {
+                  if (selected) suggestionNodeRef.current = node;
+                }}
+                x={x}
+                y={y}
+                width={width}
+                height={height}
+                fill={
+                  selected
+                    ? "rgba(124, 58, 237, 0.16)"
+                    : "rgba(124, 58, 237, 0.06)"
+                }
+                stroke={selected ? "#6D28D9" : "#8B5CF6"}
+                strokeWidth={selected ? 2.5 / zoom : 2 / zoom}
+                dash={[8 / zoom, 5 / zoom]}
+                draggable={activeTool === "select"}
+                dragBoundFunc={(pos) => ({
+                  x: clamp(pos.x, 0, pageSize.width - width),
+                  y: clamp(pos.y, 0, pageSize.height - height),
+                })}
+                onClick={(e) => {
+                  e.cancelBubble = true;
+                  if (activeTool !== "select") return;
+                  setSelectedSegmentId(null);
+                  onSelectSuggestion?.(suggestion.id);
+                }}
+                onTap={(e) => {
+                  e.cancelBubble = true;
+                  if (activeTool !== "select") return;
+                  setSelectedSegmentId(null);
+                  onSelectSuggestion?.(suggestion.id);
+                }}
+                onDragEnd={(e) => {
+                  const node = e.target;
+                  const coords = toNormalized({
+                    x: node.x(),
+                    y: node.y(),
+                    width: node.width() * node.scaleX(),
+                    height: node.height() * node.scaleY(),
+                  });
+                  node.scaleX(1);
+                  node.scaleY(1);
+                  onUpdateSuggestionCoordinates?.(suggestion.id, coords);
+                }}
+                onTransformEnd={(e) => {
+                  const node = e.target;
+                  const coords = toNormalized({
+                    x: node.x(),
+                    y: node.y(),
+                    width: Math.max(4, node.width() * node.scaleX()),
+                    height: Math.max(4, node.height() * node.scaleY()),
+                  });
+                  node.scaleX(1);
+                  node.scaleY(1);
+                  node.width(coords.width * pageSize.width);
+                  node.height(coords.height * pageSize.height);
+                  node.x(coords.x * pageSize.width);
+                  node.y(coords.y * pageSize.height);
+                  onUpdateSuggestionCoordinates?.(suggestion.id, coords);
+                }}
+              />
+            );
+          })}
+
+          {pendingSuggestions.map((suggestion, index) => (
+            <Text
+              key={`ai-label-${suggestion.id}`}
+              x={suggestion.coordinates.x * pageSize.width + 4}
+              y={suggestion.coordinates.y * pageSize.height + 4}
+              text={`AI ${index + 1}`}
+              fontSize={11 / zoom}
+              fill="#5B21B6"
+              listening={false}
+            />
+          ))}
+
           {draft && (
             <Rect
               x={Math.min(draft.x, draft.x + draft.width)}
@@ -402,6 +525,17 @@ export function CanvasWorkspace({ page }: Props) {
               return newBox;
             }}
             onTransformStart={() => pushHistory()}
+          />
+          <Transformer
+            ref={suggestionTransformerRef}
+            rotateEnabled={false}
+            ignoreStroke
+            borderStroke="#7C3AED"
+            anchorStroke="#7C3AED"
+            boundBoxFunc={(oldBox, newBox) => {
+              if (newBox.width < 8 || newBox.height < 8) return oldBox;
+              return newBox;
+            }}
           />
         </Layer>
       </Stage>

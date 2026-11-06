@@ -11,6 +11,7 @@ import * as editionController from "../controllers/editionController.js";
 import * as pageController from "../controllers/pageController.js";
 import * as segmentController from "../controllers/segmentController.js";
 import * as themeController from "../controllers/themeController.js";
+import * as aiController from "../controllers/aiController.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -70,6 +71,31 @@ router.put(
 router.patch("/segments/:segmentId", segmentController.updateSegment);
 router.delete("/segments/:segmentId", segmentController.deleteSegment);
 router.get("/segments/:segmentId/crop", segmentController.getSegmentCrop);
+
+router.post("/pages/:pageId/ai-detect", aiController.detectPage);
+router.get("/pages/:pageId/ai-job", aiController.getPageAiJob);
+router.get("/pages/:pageId/ai-suggestions", aiController.getPageAiSuggestions);
+router.post(
+  "/pages/:pageId/ai-suggestions/accept-all",
+  aiController.acceptAllAiSuggestions
+);
+router.post(
+  "/pages/:pageId/ai-suggestions/reject-all",
+  aiController.rejectAllAiSuggestions
+);
+router.patch(
+  "/ai-suggestions/:suggestionId",
+  aiController.patchAiSuggestion
+);
+router.post(
+  "/ai-suggestions/:suggestionId/accept",
+  aiController.acceptAiSuggestion
+);
+router.post(
+  "/ai-suggestions/:suggestionId/reject",
+  aiController.rejectAiSuggestion
+);
+router.get("/ai/usage", aiController.getAiUsage);
 
 router.get("/themes", themeController.listThemes);
 router.get("/themes/:id", themeController.getTheme);

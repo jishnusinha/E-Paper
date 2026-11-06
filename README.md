@@ -122,6 +122,56 @@ apps/api       Express API, PDF worker, Cloudinary
 packages/shared  Shared types, Zod schemas, coordinate helpers
 ```
 
+## Sarvam AI article detection
+
+Optional admin feature: **Auto Detect Articles** sends one newspaper page image to
+[Sarvam Document AI Parse](https://docs.sarvam.ai/api/api-guides-tutorials/document-intelligence/how-to/parse),
+groups layout blocks into reviewable suggestions, and lets you accept them as
+ordinary segments.
+
+### Enable
+
+1. Create an API key in the Sarvam dashboard.
+2. Set backend env vars (see `.env.example`):
+
+```env
+SARVAM_API_KEY=your_key_here
+SARVAM_AI_ENABLED=true
+SARVAM_MAX_PAGES_PER_DAY=3
+SARVAM_MAX_REQUESTS_PER_DAY=5
+SARVAM_MONTHLY_BUDGET_INR=50
+```
+
+3. Restart the API. The editor shows **✨ Auto Detect Articles** when a page is selected.
+
+Without a key (or with `SARVAM_AI_ENABLED=false`), manual drawing and the public
+reader keep working; the AI button stays disabled.
+
+### How it works
+
+1. Admin confirms analysis (paid request) or receives a cached result.
+2. Backend prepares the existing page image and submits `POST /doc-ai/v1/job/parse`
+   with `output_format=json` via direct HTTP (JS SDK does not reliably send this field).
+3. Frontend polls job status; backend reconciles on demand (Railway-friendly, no Redis).
+4. Results ZIP → layout blocks → conservative article grouping → `AiSuggestion` docs.
+5. Purple dashed rectangles appear on the Konva canvas for review.
+6. Accept creates a normal `Segment` (idempotent). Reject keeps history without publishing.
+
+### Cost safeguards
+
+- Manual trigger only (never on PDF upload, page open, or public reads)
+- Content-hash cache per page/language/processing version
+- Daily page/request caps and monthly estimated budget
+- Application estimates are **not** Sarvam account balances — configure provider billing limits separately
+
+### Limitations
+
+- Grouping is heuristic; newspaper layouts vary. Prefer separate “Needs Review”
+  suggestions over incorrect merges.
+- Confidence is shown only when the provider supplies it; otherwise “Needs Review”.
+- One page per request in v1.
+- Live Sarvam responses depend on your key, credits, and current API contracts.
+
 ## Security notes
 
 - Admin auth uses HTTP-only JWT cookies
@@ -129,3 +179,4 @@ packages/shared  Shared types, Zod schemas, coordinate helpers
 - Public APIs only expose published editions
 - Crop endpoints validate ownership and publication state
 - Cloudinary credentials stay on the backend only
+- `SARVAM_API_KEY` is server-only and never returned to the browser
