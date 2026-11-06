@@ -12,6 +12,7 @@ import type { AdminUser } from "@/types";
 interface AuthContextValue {
   admin: AdminUser | null;
   loading: boolean;
+  register: (name: string, email: string, password: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
@@ -38,6 +39,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     void refresh();
   }, [refresh]);
 
+  const register = useCallback(
+    async (name: string, email: string, password: string) => {
+      const user = await authApi.register(name, email, password);
+      setAdmin(user);
+    },
+    []
+  );
+
   const login = useCallback(async (email: string, password: string) => {
     const user = await authApi.login(email, password);
     setAdmin(user);
@@ -49,8 +58,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ admin, loading, login, logout, refresh }),
-    [admin, loading, login, logout, refresh]
+    () => ({ admin, loading, register, login, logout, refresh }),
+    [admin, loading, register, login, logout, refresh]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

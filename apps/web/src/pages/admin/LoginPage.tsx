@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/features/auth/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -71,6 +71,15 @@ export function LoginPage() {
               {isSubmitting ? "Signing in..." : "Sign in"}
             </Button>
           </form>
+          <p className="mt-4 text-center text-sm text-muted-foreground">
+            Need an account?{" "}
+            <Link
+              to="/admin/register"
+              className="font-medium text-foreground underline-offset-4 hover:underline"
+            >
+              Register
+            </Link>
+          </p>
         </CardContent>
       </Card>
     </div>

@@ -3,6 +3,7 @@ import { ProtectedRoute } from "@/components/common/ProtectedRoute";
 import { AdminLayout } from "@/layouts/AdminLayout";
 import { PublicLayout } from "@/layouts/PublicLayout";
 import { LoginPage } from "@/pages/admin/LoginPage";
+import { RegisterPage } from "@/pages/admin/RegisterPage";
 import { DashboardPage } from "@/pages/admin/DashboardPage";
 import { EditionsPage } from "@/pages/admin/EditionsPage";
 import { CreateEditionPage } from "@/pages/admin/CreateEditionPage";
@@ -27,6 +28,7 @@ export default function App() {
       <Route path="/epaper/:date" element={<EpaperPage />} />
 
       <Route path="/admin/login" element={<LoginPage />} />
+      <Route path="/admin/register" element={<RegisterPage />} />
 
       <Route element={<ProtectedRoute />}>
         <Route path="/admin/editions/:editionId/editor" element={<EditorPage />} />
